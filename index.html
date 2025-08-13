@@ -18,8 +18,9 @@
             transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
         }
         .door {
-             /* Transition for opening/closing and opacity */
-            transition: transform 1s ease-in-out, background-color 1s ease-in-out;
+             /* Transition for opening/closing and opacity. Duration is set dynamically in JS. */
+            transition-property: transform, background-color;
+            transition-timing-function: ease-in-out;
         }
         .picker-glow {
             animation: glow 1.5s ease-in-out infinite alternate;
@@ -112,7 +113,7 @@
                     <div id="cycle-clock" class="text-lg font-mono text-blue-600 font-bold w-1/2 text-left">0.0s</div>
                 </div>
                 <div class="w-full bg-slate-200 rounded-full h-4">
-                    <div id="progress-bar" class="bg-sky-500 h-4 rounded-full" style="width: 0%; transition: width 1s linear;"></div>
+                    <div id="progress-bar" class="bg-sky-500 h-4 rounded-full" style="width: 0%; transition-property: width; transition-timing-function: linear;"></div>
                 </div>
                 <div class="flex justify-between text-xs text-slate-500 mt-1 px-1">
                     <span>0s</span>
@@ -245,7 +246,6 @@
             }
 
             updateTimelineUI();
-            progressBar.style.transitionDuration = '0.2s';
             cycleStartTime = performance.now();
             updateClock();
 
@@ -253,6 +253,7 @@
             statusText.textContent = `Pick Complete (Robot ${robotCounter})`;
             picker.classList.remove('picker-glow', 'bg-green-500');
             picker.classList.add('bg-blue-700');
+            progressBar.style.transitionDuration = '0.2s';
             progressBar.style.width = '0%';
             await sleep(500);
             if (!isAnimating) return;
@@ -261,8 +262,13 @@
             statusText.textContent = 'Switch Time: Port Door Closes';
             picker.classList.remove('bg-blue-700');
             picker.classList.add('bg-red-600');
+            
+            // Set door transition duration
+            doorLeft.style.transitionDuration = `${durations.close / 1000}s`;
+            doorRight.style.transitionDuration = `${durations.close / 1000}s`;
             progressBar.style.transitionDuration = `${durations.close / 1000}s`;
-            progressBar.classList.add('bg-blue-800'); // Darker blue for unproductive time
+
+            progressBar.classList.add('bg-blue-800');
             progressBar.classList.remove('bg-sky-500');
             doorLeft.style.transform = 'translateX(0%)';
             doorRight.style.transform = 'translateX(0%)';
@@ -273,13 +279,14 @@
             // --- 2. Robot Swap ---
             statusText.textContent = 'Switch Time: Robot Swap';
             
+            // Set robot transition duration
             robotInPort.style.transitionDuration = `${durations.swap / 1000}s`;
-            robotInPort.style.transform = 'translateX(200%)';
-
             robotWaiting.style.transitionDuration = `${durations.swap / 1000}s`;
+            progressBar.style.transitionDuration = `${durations.swap / 1000}s`;
+            
+            robotInPort.style.transform = 'translateX(200%)';
             robotWaiting.style.transform = 'translateX(0%)';
             
-            progressBar.style.transitionDuration = `${durations.swap / 1000}s`;
             progressBar.style.width = `${((durations.close + durations.swap) / totalTime) * 100}%`;
             await sleep(durations.swap);
             if (!isAnimating) return;
@@ -298,7 +305,12 @@
 
             // --- 3. Door Opens ---
             statusText.textContent = 'Switch Time: Port Door Opens';
+            
+            // Set door transition duration
+            doorLeft.style.transitionDuration = `${durations.open / 1000}s`;
+            doorRight.style.transitionDuration = `${durations.open / 1000}s`;
             progressBar.style.transitionDuration = `${durations.open / 1000}s`;
+
             doorLeft.style.transform = 'translateX(-100%)';
             doorRight.style.transform = 'translateX(100%)';
             progressBar.style.width = `${(switchTime / totalTime) * 100}%`;
@@ -311,7 +323,7 @@
             picker.classList.add('bg-green-500', 'picker-glow');
             progressBar.style.transitionDuration = `${durations.pick / 1000}s`;
             progressBar.classList.remove('bg-blue-800');
-            progressBar.classList.add('bg-sky-500'); // Lighter blue for productive time
+            progressBar.classList.add('bg-sky-500');
             progressBar.style.width = '100%';
             await sleep(durations.pick);
             if (!isAnimating) return;
