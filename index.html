@@ -26,10 +26,10 @@
         }
         @keyframes glow {
             from {
-                box-shadow: 0 0 5px #0ea5e9, 0 0 10px #0ea5e9;
+                box-shadow: 0 0 8px #fff, 0 0 12px #fff;
             }
             to {
-                box-shadow: 0 0 20px #38bdf8, 0 0 30px #38bdf8;
+                box-shadow: 0 0 24px #fff, 0 0 36px #fff;
             }
         }
         /* Style for number inputs */
@@ -50,27 +50,35 @@
             <div class="text-center mb-4">
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Goods to Person Cycle Animation</h1>
                 <p class="text-slate-500 mt-1">Visualizing productive vs. unproductive time.</p>
-                <!-- Throughput Display -->
-                <div id="throughput-display" class="mt-2 text-lg font-semibold text-blue-600"></div>
             </div>
 
             <!-- User Input Controls -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
-                <div class="text-center">
-                    <label for="door-close-time" class="text-sm font-medium text-slate-700">Door Close (s)</label>
-                    <input type="number" id="door-close-time" value="1" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                <!-- Switch Time Panel -->
+                <div class="md:col-span-2 p-4 bg-blue-50 rounded-lg">
+                    <h3 class="font-bold text-center text-slate-700 mb-3">Switch Time</h3>
+                    <div class="grid grid-cols-3 gap-4">
+                        <div class="text-center">
+                            <label for="door-close-time" class="text-sm font-medium text-slate-700">Door Close (s)</label>
+                            <input type="number" id="door-close-time" value="1" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                        </div>
+                        <div class="text-center">
+                            <label for="robot-swap-time" class="text-sm font-medium text-slate-700">Robot Swap (s)</label>
+                            <input type="number" id="robot-swap-time" value="5" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                        </div>
+                        <div class="text-center">
+                            <label for="door-open-time" class="text-sm font-medium text-slate-700">Door Open (s)</label>
+                             <input type="number" id="door-open-time" value="1" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                        </div>
+                    </div>
                 </div>
-                <div class="text-center">
-                    <label for="robot-swap-time" class="text-sm font-medium text-slate-700">Robot Swap (s)</label>
-                    <input type="number" id="robot-swap-time" value="5" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
-                </div>
-                <div class="text-center">
-                    <label for="door-open-time" class="text-sm font-medium text-slate-700">Door Open (s)</label>
-                     <input type="number" id="door-open-time" value="1" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
-                </div>
-                <div class="text-center">
-                    <label for="operator-pick-time" class="text-sm font-medium text-slate-700">Operator Pick (s)</label>
-                    <input type="number" id="operator-pick-time" value="10" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                <!-- Wait Time Panel -->
+                 <div class="md:col-span-1 p-4 bg-blue-50 rounded-lg">
+                    <h3 class="font-bold text-center text-slate-700 mb-3">Wait Time</h3>
+                     <div class="text-center">
+                        <label for="operator-pick-time" class="text-sm font-medium text-slate-700">Operator Pick (s)</label>
+                        <input type="number" id="operator-pick-time" value="10" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                    </div>
                 </div>
             </div>
 
@@ -119,9 +127,10 @@
                 </button>
             </div>
 
-            <!-- SOW Text -->
-            <div class="mt-6 p-4 text-center text-sm text-slate-600 bg-blue-50 rounded-lg">
-                <p id="sow-text"></p>
+            <!-- Throughput and SOW Text -->
+            <div class="mt-6 p-4 text-center text-slate-600 bg-blue-50 rounded-lg">
+                <div id="throughput-display" class="mb-2 text-lg font-semibold text-blue-600"></div>
+                <p id="sow-text" class="text-sm"></p>
             </div>
         </div>
     </div>
@@ -213,7 +222,8 @@
             doorLeft.style.transform = 'translateX(-100%)';
             doorRight.style.transform = 'translateX(100%)';
             
-            picker.classList.remove('picker-glow');
+            picker.classList.remove('picker-glow', 'bg-red-600', 'bg-green-500');
+            picker.classList.add('bg-blue-700');
             progressBar.style.transitionDuration = '0.1s';
             progressBar.style.width = '0%';
             statusText.textContent = 'Press Start to Begin';
@@ -241,13 +251,16 @@
 
             // --- 0. Previous Pick Complete ---
             statusText.textContent = `Pick Complete (Robot ${robotCounter})`;
-            picker.classList.remove('picker-glow');
+            picker.classList.remove('picker-glow', 'bg-green-500');
+            picker.classList.add('bg-blue-700');
             progressBar.style.width = '0%';
             await sleep(500);
             if (!isAnimating) return;
 
             // --- 1. Door Closes ---
             statusText.textContent = 'Switch Time: Port Door Closes';
+            picker.classList.remove('bg-blue-700');
+            picker.classList.add('bg-red-600');
             progressBar.style.transitionDuration = `${durations.close / 1000}s`;
             progressBar.classList.add('bg-blue-800'); // Darker blue for unproductive time
             progressBar.classList.remove('bg-sky-500');
@@ -294,10 +307,11 @@
 
             // --- 4. Operator Picks ---
             statusText.textContent = `Productive Time: Operator Picks (Robot ${robotCounter})`;
+            picker.classList.remove('bg-red-600');
+            picker.classList.add('bg-green-500', 'picker-glow');
             progressBar.style.transitionDuration = `${durations.pick / 1000}s`;
             progressBar.classList.remove('bg-blue-800');
             progressBar.classList.add('bg-sky-500'); // Lighter blue for productive time
-            picker.classList.add('picker-glow');
             progressBar.style.width = '100%';
             await sleep(durations.pick);
             if (!isAnimating) return;
