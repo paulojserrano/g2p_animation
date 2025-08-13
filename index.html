@@ -1,0 +1,337 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Goods to Person Cycle Animation</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .robot {
+            /* Transition transform property for movement */
+            transition-property: transform;
+            transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+        }
+        .door {
+             /* Transition for opening/closing and opacity */
+            transition: transform 1s ease-in-out, background-color 1s ease-in-out;
+        }
+        .picker-glow {
+            animation: glow 1.5s ease-in-out infinite alternate;
+        }
+        @keyframes glow {
+            from {
+                box-shadow: 0 0 5px #0ea5e9, 0 0 10px #0ea5e9;
+            }
+            to {
+                box-shadow: 0 0 20px #38bdf8, 0 0 30px #38bdf8;
+            }
+        }
+        /* Style for number inputs */
+        input[type=number]::-webkit-inner-spin-button, 
+        input[type=number]::-webkit-outer-spin-button { 
+          -webkit-appearance: none; 
+          margin: 0; 
+        }
+        input[type=number] {
+          -moz-appearance: textfield;
+        }
+    </style>
+</head>
+<body class="bg-slate-50 flex items-center justify-center min-h-screen p-4">
+
+    <div class="w-full max-w-4xl mx-auto bg-white rounded-2xl shadow-2xl border border-gray-200">
+        <div class="p-6">
+            <div class="text-center mb-4">
+                <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Goods to Person Cycle Animation</h1>
+                <p class="text-slate-500 mt-1">Visualizing productive vs. unproductive time.</p>
+                <!-- Throughput Display -->
+                <div id="throughput-display" class="mt-2 text-lg font-semibold text-blue-600"></div>
+            </div>
+
+            <!-- User Input Controls -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6 p-4 bg-blue-50 rounded-lg">
+                <div class="text-center">
+                    <label for="door-close-time" class="text-sm font-medium text-slate-700">Door Close (s)</label>
+                    <input type="number" id="door-close-time" value="1" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                </div>
+                <div class="text-center">
+                    <label for="robot-swap-time" class="text-sm font-medium text-slate-700">Robot Swap (s)</label>
+                    <input type="number" id="robot-swap-time" value="5" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                </div>
+                <div class="text-center">
+                    <label for="door-open-time" class="text-sm font-medium text-slate-700">Door Open (s)</label>
+                     <input type="number" id="door-open-time" value="1" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                </div>
+                <div class="text-center">
+                    <label for="operator-pick-time" class="text-sm font-medium text-slate-700">Operator Pick (s)</label>
+                    <input type="number" id="operator-pick-time" value="10" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                </div>
+            </div>
+
+            <!-- Animation Area -->
+            <div class="relative w-full h-64 bg-slate-200 rounded-lg overflow-hidden border-4 border-slate-300 flex items-center justify-center">
+                <!-- Port Container in the middle -->
+                <div class="relative w-48 h-48 z-10">
+                    <!-- Robot In Port -->
+                    <div id="robot-in-port" class="robot absolute w-48 h-48 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-lg" style="transform: translateX(0%);">Robot 1</div>
+                    <!-- Robot Waiting -->
+                    <div id="robot-waiting" class="robot absolute w-48 h-48 bg-sky-500 rounded-lg flex items-center justify-center text-white font-bold text-lg" style="transform: translateX(-200%);">Robot 2</div>
+                    
+                    <!-- Port Doors (now inside the port container) -->
+                    <div id="door-left" class="door absolute top-0 left-0 h-full w-1/2 border-r-2 border-slate-600 z-20" style="transform: translateX(-100%); background-color: rgba(100, 116, 139, 0.7);"></div>
+                    <div id="door-right" class="door absolute top-0 right-0 h-full w-1/2 border-l-2 border-slate-600 z-20" style="transform: translateX(100%); background-color: rgba(100, 116, 139, 0.7);"></div>
+                </div>
+                
+                <!-- Picker -->
+                <div class="absolute bottom-4 text-center z-30">
+                     <div id="picker" class="w-16 h-16 bg-blue-700 rounded-full flex items-center justify-center transition-all duration-500">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-8 w-8 text-white" viewBox="0 0 20 20" fill="currentColor"><path fill-rule="evenodd" d="M10 9a3 3 0 100-6 3 3 0 000 6zm-7 9a7 7 0 1114 0H3z" clip-rule="evenodd" /></svg>
+                     </div>
+                     <span class="text-xs font-semibold text-slate-700 mt-2 block">Picker</span>
+                </div>
+            </div>
+
+            <!-- Timeline & Controls -->
+            <div class="mt-4">
+                <div class="flex justify-center items-center mb-2 space-x-4">
+                    <div id="status-text" class="text-lg font-semibold text-slate-700 text-right w-1/2">Press Start to Begin</div>
+                    <div id="cycle-clock" class="text-lg font-mono text-blue-600 font-bold w-1/2 text-left">0.0s</div>
+                </div>
+                <div class="w-full bg-slate-200 rounded-full h-4">
+                    <div id="progress-bar" class="bg-sky-500 h-4 rounded-full" style="width: 0%; transition: width 1s linear;"></div>
+                </div>
+                <div class="flex justify-between text-xs text-slate-500 mt-1 px-1">
+                    <span>0s</span>
+                    <span id="switch-time-marker" class="relative"></span>
+                    <span id="total-time-marker"></span>
+                </div>
+            </div>
+            
+            <div class="mt-6 flex justify-center">
+                <button id="start-stop-btn" class="px-8 py-3 w-32 bg-blue-600 text-white font-semibold rounded-lg shadow-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-opacity-75 transition-all">
+                    Start
+                </button>
+            </div>
+
+            <!-- SOW Text -->
+            <div class="mt-6 p-4 text-center text-sm text-slate-600 bg-blue-50 rounded-lg">
+                <p id="sow-text"></p>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // DOM Elements
+        const doorLeft = document.getElementById('door-left');
+        const doorRight = document.getElementById('door-right');
+        let robotInPort = document.getElementById('robot-in-port');
+        let robotWaiting = document.getElementById('robot-waiting');
+        const picker = document.getElementById('picker');
+        const progressBar = document.getElementById('progress-bar');
+        const statusText = document.getElementById('status-text');
+        const cycleClock = document.getElementById('cycle-clock');
+        const startStopBtn = document.getElementById('start-stop-btn');
+        const throughputDisplay = document.getElementById('throughput-display');
+        const sowText = document.getElementById('sow-text');
+        const inputs = {
+            doorClose: document.getElementById('door-close-time'),
+            robotSwap: document.getElementById('robot-swap-time'),
+            doorOpen: document.getElementById('door-open-time'),
+            operatorPick: document.getElementById('operator-pick-time'),
+        };
+        const switchTimeMarker = document.getElementById('switch-time-marker');
+        const totalTimeMarker = document.getElementById('total-time-marker');
+
+        // State
+        let isAnimating = false;
+        let robotCounter = 1;
+        let cycleStartTime = 0;
+        let clockAnimationId;
+
+        // Utility to pause execution
+        const sleep = (ms) => new Promise(resolve => {
+            if (isAnimating) setTimeout(resolve, ms);
+        });
+
+        // Get durations from input fields
+        function getDurations() {
+            return {
+                close: Math.max(0, parseFloat(inputs.doorClose.value) || 0) * 1000,
+                swap: Math.max(0, parseFloat(inputs.robotSwap.value) || 0) * 1000,
+                open: Math.max(0, parseFloat(inputs.doorOpen.value) || 0) * 1000,
+                pick: Math.max(0, parseFloat(inputs.operatorPick.value) || 0) * 1000,
+            };
+        }
+
+        function updateTimelineUI() {
+            const durations = getDurations();
+            const switchTimeSec = (durations.close + durations.swap + durations.open) / 1000;
+            const totalTimeSec = (switchTimeSec + durations.pick / 1000);
+            
+            switchTimeMarker.textContent = `${switchTimeSec.toFixed(1)}s (Switch)`;
+            totalTimeMarker.textContent = `${totalTimeSec.toFixed(1)}s (Total)`;
+            
+            if (totalTimeSec > 0) {
+                const switchTimePercentage = (switchTimeSec / totalTimeSec) * 100;
+                switchTimeMarker.style.position = 'absolute';
+                switchTimeMarker.style.left = `calc(${switchTimePercentage}% - 25px)`;
+                
+                const pph = (3600 / totalTimeSec).toFixed(1);
+                throughputDisplay.textContent = `Throughput: ${pph} cycles/hour`;
+
+                const pickTimeSec = durations.pick / 1000;
+                const sowWaitTime = pickTimeSec * 0.90;
+                sowText.innerHTML = `For the purposes of specifying wait time in the SOW, account for a 90% PFD factor. In other words, the wait time in the SOW should be <b>${pickTimeSec.toFixed(1)}s</b> x 0.90 = <b>${sowWaitTime.toFixed(2)}s</b>`;
+
+            } else {
+                throughputDisplay.textContent = 'Throughput: -';
+                sowText.innerHTML = 'For the purposes of specifying wait time in the SOW, account for a 90% PFD factor.';
+            }
+        }
+
+        function updateClock() {
+            if (!isAnimating) return;
+            const elapsed = (performance.now() - cycleStartTime) / 1000;
+            cycleClock.textContent = `${elapsed.toFixed(1)}s`;
+            clockAnimationId = requestAnimationFrame(updateClock);
+        }
+
+        function resetToInitialState() {
+            robotCounter = 1;
+            robotInPort.textContent = `Robot ${robotCounter}`;
+            robotWaiting.textContent = `Robot ${robotCounter + 1}`;
+            
+            robotInPort.style.transform = 'translateX(0%)';
+            robotWaiting.style.transform = 'translateX(-200%)';
+            
+            doorLeft.style.transform = 'translateX(-100%)';
+            doorRight.style.transform = 'translateX(100%)';
+            
+            picker.classList.remove('picker-glow');
+            progressBar.style.transitionDuration = '0.1s';
+            progressBar.style.width = '0%';
+            statusText.textContent = 'Press Start to Begin';
+            cycleClock.textContent = '0.0s';
+            updateTimelineUI();
+        }
+
+        async function animationLoop() {
+            if (!isAnimating) return;
+
+            const durations = getDurations();
+            const switchTime = durations.close + durations.swap + durations.open;
+            const totalTime = switchTime + durations.pick;
+            
+            if (totalTime <= 0) {
+                statusText.textContent = 'Set durations > 0 to start';
+                toggleAnimation();
+                return;
+            }
+
+            updateTimelineUI();
+            progressBar.style.transitionDuration = '0.2s';
+            cycleStartTime = performance.now();
+            updateClock();
+
+            // --- 0. Previous Pick Complete ---
+            statusText.textContent = `Pick Complete (Robot ${robotCounter})`;
+            picker.classList.remove('picker-glow');
+            progressBar.style.width = '0%';
+            await sleep(500);
+            if (!isAnimating) return;
+
+            // --- 1. Door Closes ---
+            statusText.textContent = 'Switch Time: Port Door Closes';
+            progressBar.style.transitionDuration = `${durations.close / 1000}s`;
+            progressBar.classList.add('bg-blue-800'); // Darker blue for unproductive time
+            progressBar.classList.remove('bg-sky-500');
+            doorLeft.style.transform = 'translateX(0%)';
+            doorRight.style.transform = 'translateX(0%)';
+            progressBar.style.width = `${(durations.close / totalTime) * 100}%`;
+            await sleep(durations.close);
+            if (!isAnimating) return;
+
+            // --- 2. Robot Swap ---
+            statusText.textContent = 'Switch Time: Robot Swap';
+            
+            robotInPort.style.transitionDuration = `${durations.swap / 1000}s`;
+            robotInPort.style.transform = 'translateX(200%)';
+
+            robotWaiting.style.transitionDuration = `${durations.swap / 1000}s`;
+            robotWaiting.style.transform = 'translateX(0%)';
+            
+            progressBar.style.transitionDuration = `${durations.swap / 1000}s`;
+            progressBar.style.width = `${((durations.close + durations.swap) / totalTime) * 100}%`;
+            await sleep(durations.swap);
+            if (!isAnimating) return;
+
+            // --- Post-Swap State Reset ---
+            robotCounter++;
+            robotInPort.style.transitionDuration = '0s';
+            robotInPort.style.transform = 'translateX(-200%)';
+            
+            const temp = robotInPort;
+            robotInPort = robotWaiting;
+            robotWaiting = temp;
+            
+            robotWaiting.textContent = `Robot ${robotCounter + 1}`;
+            await sleep(10);
+
+            // --- 3. Door Opens ---
+            statusText.textContent = 'Switch Time: Port Door Opens';
+            progressBar.style.transitionDuration = `${durations.open / 1000}s`;
+            doorLeft.style.transform = 'translateX(-100%)';
+            doorRight.style.transform = 'translateX(100%)';
+            progressBar.style.width = `${(switchTime / totalTime) * 100}%`;
+            await sleep(durations.open);
+            if (!isAnimating) return;
+
+            // --- 4. Operator Picks ---
+            statusText.textContent = `Productive Time: Operator Picks (Robot ${robotCounter})`;
+            progressBar.style.transitionDuration = `${durations.pick / 1000}s`;
+            progressBar.classList.remove('bg-blue-800');
+            progressBar.classList.add('bg-sky-500'); // Lighter blue for productive time
+            picker.classList.add('picker-glow');
+            progressBar.style.width = '100%';
+            await sleep(durations.pick);
+            if (!isAnimating) return;
+
+            animationLoop();
+        }
+
+        function toggleAnimation() {
+            isAnimating = !isAnimating;
+            if (isAnimating) {
+                startStopBtn.textContent = 'Stop';
+                startStopBtn.classList.remove('bg-blue-600', 'hover:bg-blue-700');
+                startStopBtn.classList.add('bg-red-600', 'hover:bg-red-700');
+                animationLoop();
+            } else {
+                startStopBtn.textContent = 'Start';
+                startStopBtn.classList.remove('bg-red-600', 'hover:bg-red-700');
+                startStopBtn.classList.add('bg-blue-600', 'hover:bg-blue-700');
+                cancelAnimationFrame(clockAnimationId);
+                resetToInitialState();
+            }
+        }
+
+        // Event Listeners
+        startStopBtn.addEventListener('click', toggleAnimation);
+        Object.values(inputs).forEach(input => {
+            input.addEventListener('change', () => {
+                updateTimelineUI();
+            });
+        });
+        
+        window.onload = () => {
+            resetToInitialState();
+        };
+    </script>
+</body>
+</html>
