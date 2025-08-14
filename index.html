@@ -50,35 +50,45 @@
         <div class="p-6">
             <div class="text-center mb-4">
                 <h1 class="text-2xl md:text-3xl font-bold text-slate-800">Goods to Person Cycle Animation</h1>
-                <p class="text-slate-500 mt-1">Visualizing productive vs. unproductive time.</p>
+                <p class="text-slate-500 mt-1">Visualizing system performance test parameters.</p>
             </div>
 
             <!-- User Input Controls -->
-            <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
                 <!-- Switch Time Panel -->
-                <div class="md:col-span-2 p-4 bg-blue-50 rounded-lg">
+                <div class="p-4 bg-blue-50 rounded-lg">
                     <h3 class="font-bold text-center text-slate-700 mb-3">Switch Time</h3>
-                    <div class="grid grid-cols-3 gap-4">
+                    <div class="space-y-3">
                         <div class="text-center">
                             <label for="door-close-time" class="text-sm font-medium text-slate-700">Door Close (s)</label>
-                            <input type="number" id="door-close-time" value="1" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                            <input type="number" id="door-close-time" value="1.5" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
                         </div>
                         <div class="text-center">
                             <label for="robot-swap-time" class="text-sm font-medium text-slate-700">Robot Swap (s)</label>
-                            <input type="number" id="robot-swap-time" value="5" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                            <input type="number" id="robot-swap-time" value="3" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
                         </div>
                         <div class="text-center">
                             <label for="door-open-time" class="text-sm font-medium text-slate-700">Door Open (s)</label>
-                             <input type="number" id="door-open-time" value="1" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                             <input type="number" id="door-open-time" value="1.5" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
                         </div>
                     </div>
                 </div>
-                <!-- Wait Time Panel -->
-                 <div class="md:col-span-1 p-4 bg-blue-50 rounded-lg">
-                    <h3 class="font-bold text-center text-slate-700 mb-3">Wait Time</h3>
-                     <div class="text-center">
-                        <label for="operator-pick-time" class="text-sm font-medium text-slate-700">Operator Pick (s)</label>
-                        <input type="number" id="operator-pick-time" value="10" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                <!-- Target Wait Time Calculation Panel -->
+                 <div class="p-4 bg-blue-50 rounded-lg">
+                    <h3 class="font-bold text-center text-slate-700 mb-3">Target Wait Time Calculation</h3>
+                     <div class="space-y-3">
+                        <div class="text-center">
+                            <label for="max-wait-time" class="text-sm font-medium text-slate-700">Max Allowable Wait Time (s)</label>
+                            <input type="number" id="max-wait-time" value="15" min="0" step="0.5" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                        </div>
+                        <div class="text-center">
+                            <label for="performance-buffer" class="text-sm font-medium text-slate-700">Performance Buffer (%)</label>
+                            <input type="number" id="performance-buffer" value="10" min="0" max="100" step="1" class="mt-1 w-full p-2 text-center bg-white text-slate-800 rounded-md border border-slate-300">
+                        </div>
+                        <div class="text-center">
+                            <label for="target-wait-time" class="text-sm font-medium text-slate-700">Target Wait Time (s)</label>
+                            <input type="number" id="target-wait-time" value="13.5" class="mt-1 w-full p-2 text-center bg-slate-200 text-slate-800 font-bold rounded-md border border-slate-300" disabled>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -128,10 +138,9 @@
                 </button>
             </div>
 
-            <!-- Throughput and SOW Text -->
-            <div class="mt-6 p-4 text-center text-slate-600 bg-blue-50 rounded-lg">
-                <div id="throughput-display" class="mb-2 text-lg font-semibold text-blue-600"></div>
-                <p id="sow-text" class="text-sm"></p>
+             <!-- Throughput Display -->
+             <div class="mt-6 p-4 text-center text-slate-600 bg-blue-50 rounded-lg">
+                <div id="throughput-display" class="text-lg font-semibold text-blue-600"></div>
             </div>
         </div>
     </div>
@@ -148,12 +157,13 @@
         const cycleClock = document.getElementById('cycle-clock');
         const startStopBtn = document.getElementById('start-stop-btn');
         const throughputDisplay = document.getElementById('throughput-display');
-        const sowText = document.getElementById('sow-text');
         const inputs = {
             doorClose: document.getElementById('door-close-time'),
             robotSwap: document.getElementById('robot-swap-time'),
             doorOpen: document.getElementById('door-open-time'),
-            operatorPick: document.getElementById('operator-pick-time'),
+            maxWait: document.getElementById('max-wait-time'),
+            buffer: document.getElementById('performance-buffer'),
+            targetWait: document.getElementById('target-wait-time'),
         };
         const switchTimeMarker = document.getElementById('switch-time-marker');
         const totalTimeMarker = document.getElementById('total-time-marker');
@@ -169,13 +179,23 @@
             if (isAnimating) setTimeout(resolve, ms);
         });
 
+        // Calculate Target Wait Time
+        function calculateTargetWaitTime() {
+            const maxWait = parseFloat(inputs.maxWait.value) || 0;
+            const buffer = parseFloat(inputs.buffer.value) || 0;
+            const target = maxWait * (1 - (buffer / 100));
+            inputs.targetWait.value = target.toFixed(2);
+            return target;
+        }
+
         // Get durations from input fields
         function getDurations() {
+            const targetWaitSec = calculateTargetWaitTime();
             return {
                 close: Math.max(0, parseFloat(inputs.doorClose.value) || 0) * 1000,
                 swap: Math.max(0, parseFloat(inputs.robotSwap.value) || 0) * 1000,
                 open: Math.max(0, parseFloat(inputs.doorOpen.value) || 0) * 1000,
-                pick: Math.max(0, parseFloat(inputs.operatorPick.value) || 0) * 1000,
+                pick: Math.max(0, targetWaitSec) * 1000,
             };
         }
 
@@ -194,14 +214,8 @@
                 
                 const pph = (3600 / totalTimeSec).toFixed(1);
                 throughputDisplay.textContent = `Throughput: ${pph} cycles/hour`;
-
-                const pickTimeSec = durations.pick / 1000;
-                const sowWaitTime = pickTimeSec * 0.90;
-                sowText.innerHTML = `For the purposes of specifying wait time in the SOW, account for a 90% PFD factor. In other words, the wait time in the SOW should be <b>${pickTimeSec.toFixed(1)}s</b> x 0.90 = <b>${sowWaitTime.toFixed(2)}s</b>`;
-
             } else {
                 throughputDisplay.textContent = 'Throughput: -';
-                sowText.innerHTML = 'For the purposes of specifying wait time in the SOW, account for a 90% PFD factor.';
             }
         }
 
@@ -263,7 +277,6 @@
             picker.classList.remove('bg-blue-700');
             picker.classList.add('bg-red-600');
             
-            // Set door transition duration
             doorLeft.style.transitionDuration = `${durations.close / 1000}s`;
             doorRight.style.transitionDuration = `${durations.close / 1000}s`;
             progressBar.style.transitionDuration = `${durations.close / 1000}s`;
@@ -279,7 +292,6 @@
             // --- 2. Robot Swap ---
             statusText.textContent = 'Switch Time: Robot Swap';
             
-            // Set robot transition duration
             robotInPort.style.transitionDuration = `${durations.swap / 1000}s`;
             robotWaiting.style.transitionDuration = `${durations.swap / 1000}s`;
             progressBar.style.transitionDuration = `${durations.swap / 1000}s`;
@@ -306,7 +318,6 @@
             // --- 3. Door Opens ---
             statusText.textContent = 'Switch Time: Port Door Opens';
             
-            // Set door transition duration
             doorLeft.style.transitionDuration = `${durations.open / 1000}s`;
             doorRight.style.transitionDuration = `${durations.open / 1000}s`;
             progressBar.style.transitionDuration = `${durations.open / 1000}s`;
